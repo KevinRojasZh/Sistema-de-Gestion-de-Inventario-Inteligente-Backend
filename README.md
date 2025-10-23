@@ -112,11 +112,3 @@ Copiar código
 npm run dev
 API disponible en: http://localhost:3001/api/
 
-💡 Tips Adicionales
-Usa Postman o Insomnia para probar endpoints.
-
-Documenta la API con Swagger para que los endpoints sean fáciles de usar.
-
-Agrega badges de build, coverage y tests en el README para un toque profesional.
-
-Comparte el repositorio en LinkedIn para atraer reclutadores y mostrar tu backend avanzado.
