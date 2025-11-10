@@ -19,7 +19,8 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.2"
+    "mongoose": "^8.19.2",
+    "supertest": "^7.1.4"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.5.0",
