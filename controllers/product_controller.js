@@ -1,23 +1,22 @@
 import { Router } from "express"; //IMPORTAMOS ROUTER DE EXPRESS
-import Product from "../models/product"; // IMPORTO EL MODELO DEL PRODUCTO
-import User from "../models/user"; //USER MODEL
-import middleware from "../utils/middleware"; // MIDDLEWARES
+import Product from "../models/product.js"; // IMPORTO EL MODELO DEL PRODUCTO
+import User from "../models/user.js"; //USER MODEL
+import middleware from "../utils/middleware.js"; // MIDDLEWARES
 
 const productRouter = Router(); // CREAMOS  EL OBJETO ROUTER
 
 //-------- METODOS -----------------------------------------
 /**
- *! GET ALL BLOGS: Ruta para obtener todos los blogs
+ *! GET ALL PRODUCTS: Ruta para obtener todos los productos
  */
 productRouter.get("/", async (request, response) => {
   // Busca todos los documentos de la colección 'Product'.
   // .populate('user', { userName: 1, name: 1 }) es crucial: reemplaza el ObjectId del campo 'user'
   // con los datos reales del usuario (solo userName y name), facilitando la lectura en el frontend.
-  const products = await Product.find({});
-  // .populate("user", {
-  //   userName: 1,
-  //   name: 1,
-  // });
+  const products = await Product.find({}).populate("user", {
+    userName: 1,
+    name: 1,
+  });
   // Envía la lista completa de productos como respuesta JSON.
   response.status(200).json(products);
 });

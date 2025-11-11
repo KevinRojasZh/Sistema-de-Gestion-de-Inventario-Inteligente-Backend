@@ -1,6 +1,6 @@
 import { Router } from "express"; //IMPORTAMOS ROUTER DE EXPRESS
-import Product from "../models/product"; // IMPORTO EL MODELO DEL PRODUCTO
-import User from "../models/user"; //USER MODEL
+import Product from "../models/product.js"; // IMPORTO EL MODELO DEL PRODUCTO
+import User from "../models/user.js"; //USER MODEL
 import info from "./utils/logger.js";
 import bcrypt from "bcrypt";
 
@@ -17,8 +17,6 @@ userRouter.get("/", async (request, response) => {
   // con los datos reales del usuario (solo userName y name), facilitando la lectura en el frontend.
   const products = await Product.find({}).populate("Product", {
     name: 1,
-    price: 1,
-    stock: 1,
   });
   // Envía la lista completa de productos como respuesta JSON.
   response.status(200).json(products);

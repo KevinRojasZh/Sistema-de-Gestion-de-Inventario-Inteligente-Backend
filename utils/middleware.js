@@ -1,11 +1,11 @@
-import info from "./logger";
+import info from "./logger.js";
 import jwt from "jsonwebtoken";
 
 const requestLogger = (request, response, next) => {
-  info("Method:", request.method);
-  info("Path:  ", request.path);
-  info("Body:  ", request.body);
-  info("---");
+  console.log("Method:", request.method);
+  console.log("Path:  ", request.path);
+  console.log("Body:  ", request.body);
+  console.log("---");
   next();
 };
 
@@ -41,8 +41,8 @@ const userExtract = (request, response, next) => {
 };
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message);
-  info("HOLA");
+  info("ERROR HANDLER MIDDLEWERE");
+  console.error(error);
 
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformatted id" });
