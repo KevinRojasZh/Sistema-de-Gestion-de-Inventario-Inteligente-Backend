@@ -1,66 +1,83 @@
-import info from "./logger.js";
-import jwt from "jsonwebtoken";
+import info from './logger.js'
+import jwt from 'jsonwebtoken'
 
 const requestLogger = (request, response, next) => {
-  console.log("Method:", request.method);
-  console.log("Path:  ", request.path);
-  console.log("Body:  ", request.body);
-  console.log("---");
-  next();
-};
+  console.log('Method:', request.method)
+  console.log('Path:  ', request.path)
+  console.log('Body:  ', request.body)
+  console.log('---')
+  next()
+}
 
 const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: "unknown endpoint" });
-};
+  response.status(404).send({ error: 'unknown endpoint' })
+}
 
 const tokenExtractor = (request, response, next) => {
-  const token = request.get("Authorization");
+  const token = request.get('Authorization')
   if (!token) {
-    return response.status(401).json({ error: "Dont have TOKEN" });
+    return response.status(401).json({ error: 'Dont have TOKEN' })
   }
-  if (token.startsWith("Bearer ")) {
-    const cleanToken = token.replace("Bearer ", "");
-    request.token = cleanToken;
+  if (token.startsWith('Bearer ')) {
+    const cleanToken = token.replace('Bearer ', '')
+    request.token = cleanToken
   } else {
-    return response.status(401).json({ error: "Token invalid" });
+    return response.status(401).json({ error: 'Token invalid' })
   }
-  next();
-};
+  next()
+}
 
 const userExtract = (request, response, next) => {
   if (!request.token) {
-    return next();
+    return next()
   }
-  const decodeToken = jwt.verify(request.token, process.env.SECRET);
+  const decodeToken = jwt.verify(request.token, process.env.SECRET)
   if (!decodeToken.id) {
-    throw new Error("Token dont have Id");
+    throw new Error('Token dont have Id')
   }
-  const userId = decodeToken.id;
-  request.user = userId;
-  next();
-};
+  const userId = decodeToken.id
+  request.user = userId
+  next()
+}
 
 const errorHandler = (error, request, response, next) => {
-  info("ERROR HANDLER MIDDLEWERE");
-  console.error(error);
+  info('ERROR HANDLER MIDDLEWERE')
+  console.error(error)
 
-  if (error.name === "CastError") {
-    return response.status(400).send({ error: "malformatted id" });
-  } else if (error.name === "ValidationError") {
-    return response.status(400).json({ error: error.message });
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   } else if (
-    error.name === "MongoServerError" &&
-    error.message.includes("E11000 duplicate key error")
+    error.name === 'MongoServerError' &&
+    error.message.includes('E11000 duplicate key error')
   ) {
     return response
       .status(400)
-      .json({ error: "expected `username` to be unique" });
-  } else if (error.name === "JsonWebTokenError") {
-    return response.status(401).json({ error: "token invalid" });
+      .json({ error: 'expected `username` to be unique' })
+  } else if (error.name === 'JsonWebTokenError') {
+    return response.status(401).json({ error: 'token invalid' })
   }
 
-  next(error);
-};
+  next(error)
+}
+
+const validationSchema = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body, { abortEarly: false })
+    if (error) {
+      const formattedErrors = error.details.map((d) => ({
+        field: d.path.join('.'),
+        message: d.message,
+      }))
+      return res.status(400).json({
+        error: 'Datos inválidos',
+        details: formattedErrors,
+      })
+    }
+    next()
+  }
+}
 
 export default {
   requestLogger,
@@ -68,4 +85,5 @@ export default {
   tokenExtractor,
   userExtract,
   errorHandler,
-};
+  validationSchema,
+}

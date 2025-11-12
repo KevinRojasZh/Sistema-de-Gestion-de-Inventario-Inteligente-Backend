@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const producSchema = new mongoose.Schema(
   {
@@ -30,20 +30,20 @@ const producSchema = new mongoose.Schema(
     user: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
       },
     ],
   },
-  { timestamps: true, versionKey: false }
-);
+  { timestamps: true, versionKey: false },
+)
 
-producSchema.set("toJSON", {
+producSchema.set('toJSON', {
   transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
-    delete returnedObject._id;
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
   },
-});
+})
 
-const Product = mongoose.model("Product", producSchema);
+const Product = mongoose.model('Product', producSchema)
 
-export default Product;
+export default Product

@@ -2,6 +2,7 @@ import { Router } from "express"; //IMPORTAMOS ROUTER DE EXPRESS
 import Product from "../models/product.js"; // IMPORTO EL MODELO DEL PRODUCTO
 import User from "../models/user.js"; //USER MODEL
 import middleware from "../utils/middleware.js"; // MIDDLEWARES
+import productValidation from "../validations/productValidation.js";
 
 const productRouter = Router(); // CREAMOS  EL OBJETO ROUTER
 
@@ -28,6 +29,7 @@ productRouter.post(
   "/",
   middleware.tokenExtractor,
   middleware.userExtract,
+  middleware.validationSchema(productValidation),
   async (request, response) => {
     const body = request.body;
 
