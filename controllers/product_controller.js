@@ -42,26 +42,30 @@ productRouter.post(
       name: body.name,
       stock: body.stock,
       price: body.price,
-      // Vincula el blog al usuario: usa el campo 'user' del esquema y guarda el ObjectId del usuario en un array.
+      serial_number: body.serial_number,
+      description_ia: body.description_ia,
+      category_ia: body.category_ia,
+      image_url: body.image_url,
+      // Vincula el producto al usuario: usa el campo 'user' del esquema y guarda el ObjectId del usuario en un array.
       user: user._id,
     });
 
-    // Guarda el nuevo blog en la base de datos MongoDB.
+    // Guarda el nuevo producto en la base de datos MongoDB.
     const result = await product.save();
 
     // Actualiza el array 'products' del usuario:
-    // 1. Concatena el ID del nuevo blog ('result._id') al array 'blogs' del objeto 'user'.
+    // 1. Concatena el ID del nuevo producto ('result._id') al array 'products' del objeto 'user'.
     user.product = user.product.concat(result._id);
     // 2. Guarda los cambios en el documento del usuario en la base de datos.
     await user.save();
 
-    // Responde con el código 201 Created y los datos del blog creado.
+    // Responde con el código 201 Created y los datos del PRODUCTO creado.
     response.status(201).json(result);
   }
 );
 
 /**
- *! DELETE 1 BLOG: Ruta para borrar un blog por ID
+ *! DELETE 1 PRODUCT: Ruta para borrar un blog por ID
  */
 productRouter.delete(
   "/:id",
@@ -85,7 +89,7 @@ productRouter.delete(
 );
 
 /**
- *! GET 1 BLOG: Ruta para obtener un blog por ID
+ *! GET 1 PRODUCT: Ruta para obtener un blog por ID
  */
 productRouter.get(
   "/:id",
@@ -110,7 +114,7 @@ productRouter.get(
 );
 
 /**
- *! MODIFICATE 1 BLOG: Ruta para actualizar un blog por ID (PATCH/PUT)
+ *! MODIFICATE 1 PRODUCT: Ruta para actualizar un blog por ID (PATCH/PUT)
  */
 productRouter.patch(
   "/:id",
