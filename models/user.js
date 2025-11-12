@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema(
   {
@@ -19,21 +19,21 @@ const userSchema = new mongoose.Schema(
     product: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
+        ref: 'Product',
       },
     ],
   },
-  { timestamps: true, versionKey: false }
-);
+  { timestamps: true, versionKey: false },
+)
 
-userSchema.set("toJSON", {
+userSchema.set('toJSON', {
   transform: (document, retunredObject) => {
-    ((retunredObject.id = retunredObject._id.toString()),
-      delete retunredObject._id);
-    delete retunredObject.passWordHass;
+    ;((retunredObject.id = retunredObject._id.toString()),
+      delete retunredObject._id)
+    delete retunredObject.passWordHass
   },
-});
+})
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema)
 
-export default User;
+export default User

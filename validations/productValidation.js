@@ -1,4 +1,4 @@
-import Joi from "joi";
+import Joi from 'joi'
 
 export const productValidation = Joi.object({
   name: Joi.string().min(3).max(100).required(),
@@ -7,4 +7,4 @@ export const productValidation = Joi.object({
   serial_number: Joi.string().alphanum().min(3).max(30).required(),
   category_ia: Joi.string().optional(),
   description_ia: Joi.string().optional(),
-});
+})

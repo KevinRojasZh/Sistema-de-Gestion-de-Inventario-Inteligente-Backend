@@ -1,3 +1,3 @@
-const info = (message) => console.log(message);
+const info = (message) => console.log(message)
 
-export default info;
+export default info
