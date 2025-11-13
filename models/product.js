@@ -36,6 +36,11 @@ const producSchema = new mongoose.Schema(
   },
   { timestamps: true, versionKey: false },
 )
+producSchema.index({
+  name: 'text',
+  category_ia: 'text',
+  description_ia: 'text',
+})
 
 producSchema.set('toJSON', {
   transform: (document, returnedObject) => {

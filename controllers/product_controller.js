@@ -11,9 +11,57 @@ const productRouter = Router() // CREAMOS  EL OBJETO ROUTER
  *! GET ALL PRODUCTS: Ruta para obtener todos los productos
  */
 productRouter.get('/', async (request, response) => {
-  // Busca todos los documentos de la colección 'Product'.
-  // .populate('user', { userName: 1, name: 1 }) es crucial: reemplaza el ObjectId del campo 'user'
-  // con los datos reales del usuario (solo userName y name), facilitando la lectura en el frontend.
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      category,
+      stockMin,
+      stockMax,
+    } = request.query
+    const filter = {}
+    // búsqueda parcial (insensible a mayúsculas)
+    if (search) filter.name = { $regex: search, $options: 'i' }
+
+    // búsqueda por categoria
+    if (category) filter.category_ia = category
+
+    // busqueda por min o max de stock
+    if (stockMin || stockMax) {
+      filter.stock = {}
+      if (stockMin) filter.stock.$gte = Number(stockMin)
+      if (stockMax) filter.stock.$lte = Number(stockMax)
+    }
+    // Calculamos paginación
+    const skip = (Number(page) - 1) * Number(limit)
+
+    // Obtenemos total de productos y los resultados de la página
+    const totalItems = await Product.countDocuments(filter)
+    const products = await Product.find(filter)
+      .skip(skip)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 })
+      .populate('user', {
+        userName: 1,
+        name: 1,
+      })
+
+    const totalPages = Math.ceil(totalItems / Number(limit))
+
+    // Enviamos respuesta con metadatos
+    res.json({
+      meta: {
+        totalItems,
+        totalPages,
+        currentPage: Number(page),
+        itemsPerPage: Number(limit),
+      },
+      data: products,
+    })
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los productos' })
+  }
   const products = await Product.find({}).populate('user', {
     userName: 1,
     name: 1,

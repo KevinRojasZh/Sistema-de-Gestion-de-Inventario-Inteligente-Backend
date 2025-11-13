@@ -44,22 +44,29 @@ const errorHandler = (error, request, response, next) => {
   info('ERROR HANDLER MIDDLEWERE')
   console.error(error)
 
-  if (error.name === 'CastError') {
-    return response.status(400).send({ error: 'malformatted id' })
-  } else if (error.name === 'ValidationError') {
-    return response.status(400).json({ error: error.message })
-  } else if (
-    error.name === 'MongoServerError' &&
-    error.message.includes('E11000 duplicate key error')
-  ) {
-    return response
-      .status(400)
-      .json({ error: 'expected `username` to be unique' })
-  } else if (error.name === 'JsonWebTokenError') {
-    return response.status(401).json({ error: 'token invalid' })
-  }
+  switch (error.name) {
+    case 'ValidationError':
+      return response.status(400).json({ error: error.message })
 
-  next(error)
+    case 'MongoServerError':
+      if (error.code === 11000) {
+        return response
+          .status(400)
+          .json({ error: `Campo duplicado: ${Object.keys(error.keyValue)}` })
+      }
+      return response.status(500).json({ error: 'Error en la base de datos' })
+
+    case 'CastError':
+      return response
+        .status(400)
+        .json({ error: `ID malformado: ${error.value}` })
+
+    case 'StockError':
+      return response.status(400).json({ error: error.message })
+
+    default:
+      return response.status(500).json({ error: 'Error interno del servidor' })
+  }
 }
 
 const validationSchema = (schema) => {
