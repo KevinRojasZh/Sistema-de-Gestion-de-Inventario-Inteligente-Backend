@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    passWordHass: {
+    passwordHass: {
       type: String,
       minLength: 3,
       required: true,

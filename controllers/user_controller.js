@@ -1,7 +1,7 @@
 import { Router } from 'express' //IMPORTAMOS ROUTER DE EXPRESS
 import Product from '../models/product.js' // IMPORTO EL MODELO DEL PRODUCTO
 import User from '../models/user.js' //USER MODEL
-import info from './utils/logger.js'
+import info from '../utils/logger.js'
 import bcrypt from 'bcrypt'
 
 const userRouter = Router() // CREAMOS  EL OBJETO ROUTER
@@ -15,17 +15,17 @@ userRouter.get('/', async (request, response) => {
   // Busca todos los documentos de la colección 'User'.
   // .populate('Product', { userName: 1, name: 1 }) es crucial: reemplaza el ObjectId del campo 'user'
   // con los datos reales del usuario (solo userName y name), facilitando la lectura en el frontend.
-  const products = await Product.find({}).populate('Product', {
+  const users = await User.find({}).populate('product', {
     name: 1,
   })
   // Envía la lista completa de productos como respuesta JSON.
-  response.status(200).json(products)
+  response.status(200).json(users)
 })
 
 /**
  *! POST NEW USER: Ruta para crear un nuevo USUARIO
  */
-userRouter.post('/', async (request, response) => {
+userRouter.post('/signup', async (request, response) => {
   const { userName, name, password } = request.body
   if (password.length < 3) {
     return response
@@ -91,3 +91,5 @@ userRouter.patch('/:id', async (request, response) => {
     info(error.message)
   }
 })
+
+export default userRouter

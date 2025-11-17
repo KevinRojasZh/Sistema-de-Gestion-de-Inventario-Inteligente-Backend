@@ -44,6 +44,10 @@ const errorHandler = (error, request, response, next) => {
   info('ERROR HANDLER MIDDLEWERE')
   console.error(error)
 
+  if (error.isJoi) {
+    return response.status(400).json({ error: error.details[0].message })
+  }
+
   switch (error.name) {
     case 'ValidationError':
       return response.status(400).json({ error: error.message })
@@ -60,9 +64,6 @@ const errorHandler = (error, request, response, next) => {
       return response
         .status(400)
         .json({ error: `ID malformado: ${error.value}` })
-
-    case 'StockError':
-      return response.status(400).json({ error: error.message })
 
     default:
       return response.status(500).json({ error: 'Error interno del servidor' })

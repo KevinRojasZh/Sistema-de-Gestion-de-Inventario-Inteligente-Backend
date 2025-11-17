@@ -15,7 +15,7 @@ loginRouter.post('/', async (request, response) => {
   // ----------------------------------------------------------------------
 
   // 1. Búsqueda del Usuario y Carga del Hash
-  const user = await User.findOne({ userName }).select('+passWordHass')
+  const user = await User.findOne({ userName }).select('+passwordHass')
 
   // ----------------------------------------------------------------------
   // 2. Comparación de Contraseña
@@ -28,7 +28,7 @@ loginRouter.post('/', async (request, response) => {
         false
       : // Esta comparación solo debe ejecutarse si 'user' es un objeto válido.
         // Si 'user' NO es null (se encontró), se usa bcrypt para comparar la contraseña.
-        await bcrypt.compare(password, user.passWordHass)
+        await bcrypt.compare(password, user.passwordHass)
 
   // ----------------------------------------------------------------------
   // 3. Verificación de Autenticación (Fail Fast)
