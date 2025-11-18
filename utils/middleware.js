@@ -1,5 +1,6 @@
 import info from './logger.js'
 import jwt from 'jsonwebtoken'
+import multer from 'multer'
 
 const requestLogger = (request, response, next) => {
   console.log('Method:', request.method)
@@ -29,15 +30,39 @@ const tokenExtractor = (request, response, next) => {
 
 const userExtract = (request, response, next) => {
   if (!request.token) {
+    // Si no hay token, simplemente pasamos al siguiente middleware o ruta.
     return next()
   }
-  const decodeToken = jwt.verify(request.token, process.env.SECRET)
-  if (!decodeToken.id) {
-    throw new Error('Token dont have Id')
+
+  try {
+    // jwt.verify() lanza un error SÍNCRONO si el token es inválido o expirado.
+    const decodeToken = jwt.verify(request.token, process.env.SECRET)
+
+    if (!decodeToken.id) {
+      // Usamos return response.status(401).json(...) en lugar de throw
+      // para manejar el error de forma inmediata y explícita.
+      return response.status(401).json({ error: 'Token invalid: ID missing' })
+    }
+
+    const userId = decodeToken.id
+    request.user = userId
+
+    // Si todo es exitoso, continuamos.
+    next()
+  } catch (error) {
+    // 💡 Capturamos los errores síncronos lanzados por jwt.verify (JsonWebTokenError, TokenExpiredError).
+
+    // Si es un error de JWT, devolvemos 401.
+    if (
+      error.name === 'JsonWebTokenError' ||
+      error.name === 'TokenExpiredError'
+    ) {
+      return response.status(401).json({ error: 'Token missing or invalid' })
+    }
+
+    // Si es otro error desconocido, lo pasamos al manejador de errores global.
+    next(error)
   }
-  const userId = decodeToken.id
-  request.user = userId
-  next()
 }
 
 const errorHandler = (error, request, response, next) => {
@@ -87,6 +112,10 @@ const validationSchema = (schema) => {
   }
 }
 
+const storage = multer.memoryStorage()
+
+const upload = multer({ storage })
+
 export default {
   requestLogger,
   unknownEndpoint,
@@ -94,4 +123,5 @@ export default {
   userExtract,
   errorHandler,
   validationSchema,
+  upload,
 }

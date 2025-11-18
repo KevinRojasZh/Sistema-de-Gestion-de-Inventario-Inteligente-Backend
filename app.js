@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import 'express-async-errors'
 import info from './utils/logger.js'
 import bd from './utils/conectBd.js'
 import mongoose from 'mongoose'

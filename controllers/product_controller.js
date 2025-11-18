@@ -3,6 +3,8 @@ import Product from '../models/product.js' // IMPORTO EL MODELO DEL PRODUCTO
 import User from '../models/user.js' //USER MODEL
 import middleware from '../utils/middleware.js' // MIDDLEWARES
 import { productValidation } from '../validations/productValidation.js'
+import uploadFileToS3 from '../services/storageService.js' // Tu función de AWS
+import { analyzeProduct } from '../services/isService.js' // Tu función de Gemini AI
 
 const productRouter = Router() // CREAMOS  EL OBJETO ROUTER
 
@@ -71,44 +73,60 @@ productRouter.post(
   '/',
   middleware.tokenExtractor,
   middleware.userExtract,
+  // MULTER: Recibe la imagen y la guarda en req.file (memoria).
+  middleware.upload.single('image'),
+  // VALIDACIÓN: Valida los campos name, stock, price, etc.
   middleware.validationSchema(productValidation),
   async (request, response) => {
+    // Desestructuración de datos
     const body = request.body
-
+    //Buscamos el usuario ya que el middleware nos seta el id que viene en el token
     const user = await User.findById(request.user)
 
+    // Si el usuario no es encontrado retornamos un error 401
     if (!user) {
       return response.status(401).json({ error: 'user not found' })
     }
 
-    // Crea una nueva instancia del modelo Product.
+    let imageUrl = null
+
+    //  SUBIDA A S3: Se ejecuta si Multer encontró un archivo.
+    if (request.file) {
+      imageUrl = await uploadFileToS3(
+        request.file.buffer,
+        request.file.mimetype,
+      )
+    }
+
+    // IA: Autogenerar descripción y categoría usando el nombre.
+    // Usamos el nombre que vino del body
+    const iaResult = await analyzeProduct(body.name)
+
+    //  CREACIÓN FINAL DEL PRODUCTO
     const product = new Product({
       name: body.name,
       stock: body.stock,
       price: body.price,
-      serial_number: body.serial_number,
-      description_ia: body.description_ia,
-      category_ia: body.category_ia,
-      image_url: body.image_url,
-      // Vincula el producto al usuario: usa el campo 'user' del esquema y guarda el ObjectId del usuario en un array.
+      serial_number: body.serial_number, // Asumo que esto aún viene en body
+
+      // Datos de la IA
+      description_ia: iaResult.descripcion,
+      category_ia: iaResult.categoria,
+
+      // Datos de S3
+      image_url: imageUrl,
+
+      // Datos del usuario (del middleware)
       user: user._id,
     })
 
-    // Guarda el nuevo producto en la base de datos MongoDB.
+    // Guarda y popula (como lo corregimos antes)
     let result = await product.save()
-
-    // Actualiza el array 'products' del usuario:
-    // 1. Concatena el ID del nuevo producto ('result._id') al array 'products' del objeto 'user'.
     user.product = user.product.concat(result._id)
-    // 2. Guarda los cambios en el documento del usuario en la base de datos.
     await user.save()
 
-    // 3.AÑADIMOS EL NOMRRE DEL USUSARIO CREADO
-    result = await result.populate('user', {
-      name: 1,
-    })
+    result = await result.populate('user', { name: 1 })
 
-    // Responde con el código 201 Created y los datos del PRODUCTO creado.
     response.status(201).json(result)
   },
 )

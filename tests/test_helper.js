@@ -101,7 +101,7 @@ export const initialProducts = (user) => {
       user: user,
     },
     {
-      name: 'Tarjeta Gráfica RTX 4070Ti',
+      name: 'Tarjeta Gráfica RTX 5070Ti',
       price: 799.0,
       stock: 25,
       serial_number: 'ELEC4070TI',
@@ -111,7 +111,7 @@ export const initialProducts = (user) => {
       user: user,
     },
     {
-      name: 'Tarjeta Gráfica RTX 4070Ti',
+      name: 'Tarjeta Gráfica RTX 7070Ti',
       price: 799.0,
       stock: 25,
       serial_number: 'ELEC4070TI',
