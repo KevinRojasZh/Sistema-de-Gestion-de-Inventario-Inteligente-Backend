@@ -68,6 +68,15 @@ const userExtract = (request, response, next) => {
 const errorHandler = (error, request, response, next) => {
   info('ERROR HANDLER MIDDLEWERE')
   console.error(error)
+  // 1. Manejo de Errores con Código de Estado HTTP (Lanzados en el router)
+  // Si el error tiene una propiedad 'status' (e.g., 401, 404, 500)
+  if (error.status && error.message) {
+    return response.status(error.status).json({ error: error.message })
+  }
+  // Si tiene un 'statusCode' (a veces usado por librerías)
+  if (error.statusCode && error.message) {
+    return response.status(error.statusCode).json({ error: error.message })
+  }
 
   if (error.isJoi) {
     return response.status(400).json({ error: error.details[0].message })

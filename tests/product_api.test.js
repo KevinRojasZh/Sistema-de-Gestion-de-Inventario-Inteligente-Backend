@@ -1,4 +1,4 @@
-import { test, after, beforeEach, describe } from 'node:test'
+import { test, after, beforeEach, describe, mock } from 'node:test'
 import supertest from 'supertest'
 import mongoose from 'mongoose'
 import assert from 'assert'
@@ -9,33 +9,56 @@ import { initialProducts } from './test_helper.js'
 import info from '../utils/logger.js'
 import bcrypt from 'bcrypt'
 
+// import * as isService from '../services/isService.js'
+// import * as storageService from '../services/storageService.js'
+
 const api = supertest(app)
 let tokenUser = null
+let storageService, isService
 
 describe('Api product test, return json,create deleted...', () => {
   beforeEach(async () => {
-    await User.deleteMany({})
+    storageService = await import('../services/storageService.js')
+    isService = await import('../services/isService.js')
+    try {
+      // await mongoose.connection.dropDatabase()
+      await User.deleteMany({})
+      await Product.deleteMany({})
 
-    const passwordHass = await bcrypt.hash('1234', 10)
-    await User.create({
-      userName: 'inventario',
-      name: 'kevin rojas',
-      passwordHass: passwordHass,
-    })
-    const users = await User.find({})
+      const passwordHass = await bcrypt.hash('1234', 10)
+      await User.create({
+        userName: 'inventario',
+        name: 'kevin rojas',
+        passwordHass: passwordHass,
+      })
 
-    await Product.deleteMany({})
+      const users = await User.find({})
 
-    await Product.insertMany(initialProducts(users[0].id))
+      await Product.insertMany(initialProducts(users[0].id))
 
-    const userData = {
-      userName: 'inventario',
-      password: '1234',
+      // mock.method(storageService, 'uploadFileToS3', async () => {
+      //   return 'https://fake-storage.com/fake-image.jpg'
+      // })
+
+      // mock.method(isService, 'analyzeProduct', async () => {
+      //   return {
+      //     descripcion: 'Descripción IA falsa',
+      //     categoria: 'Categoria IA falsa',
+      //   }
+      // })
+
+      const userData = {
+        userName: 'inventario',
+        password: '1234',
+      }
+      const loginUser = await api.post('/api/login').send(userData).expect(200)
+
+      tokenUser = `Bearer ${loginUser.body.token}`
+      info('TOKEN:', tokenUser)
+    } catch (err) {
+      console.error('Error en beforeEach:', err)
+      throw err // importante para que el test sepa que falló
     }
-    const loginUser = await api.post('/api/login').send(userData).expect(200)
-
-    tokenUser = `Bearer ${loginUser.body.token}`
-    info('TOKEN:', tokenUser)
   })
 
   test('Products has in the database', async () => {
@@ -54,7 +77,10 @@ describe('Api product test, return json,create deleted...', () => {
     const response = await api
       .post('/api/products')
       .set('Authorization', tokenUser)
-      .send(newProduct)
+      .field('name', newProduct.name)
+      .field('price', newProduct.price.toString())
+      .field('stock', newProduct.stock.toString())
+      .field('serial_number', newProduct.serial_number)
       .expect(201)
       .expect('Content-Type', /application\/json/)
 
@@ -163,7 +189,11 @@ describe('Api product test, return json,create deleted...', () => {
     assert.ok(!ids1.includes(ids2[0]))
   })
 
+  // afterEach(() => {
+  //   mock.restoreAll()
+  // })
   after(async () => {
     await mongoose.connection.close()
+    mock.restoreAll()
   })
 })

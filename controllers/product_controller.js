@@ -3,8 +3,9 @@ import Product from '../models/product.js' // IMPORTO EL MODELO DEL PRODUCTO
 import User from '../models/user.js' //USER MODEL
 import middleware from '../utils/middleware.js' // MIDDLEWARES
 import { productValidation } from '../validations/productValidation.js'
-import uploadFileToS3 from '../services/storageService.js' // Tu función de AWS
+import { uploadFileToS3 } from '../services/storageService.js' // Tu función de AWS
 import { analyzeProduct } from '../services/isService.js' // Tu función de Gemini AI
+import asyncHandler from 'express-async-handler'
 
 const productRouter = Router() // CREAMOS  EL OBJETO ROUTER
 
@@ -12,59 +13,62 @@ const productRouter = Router() // CREAMOS  EL OBJETO ROUTER
 /**
  *! GET ALL PRODUCTS: Ruta para obtener todos los productos
  */
-productRouter.get('/', async (request, response) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      category,
-      stockMin,
-      stockMax,
-    } = request.query
-    const filter = {}
-    // búsqueda parcial (insensible a mayúsculas)
-    if (search) filter.$text = { $search: search }
+productRouter.get(
+  '/',
+  asyncHandler(async (request, response) => {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        category,
+        stockMin,
+        stockMax,
+      } = request.query
+      const filter = {}
+      // búsqueda parcial (insensible a mayúsculas)
+      if (search) filter.$text = { $search: search }
 
-    // búsqueda por categoria
-    if (category) filter.category_ia = category
+      // búsqueda por categoria
+      if (category) filter.category_ia = category
 
-    // busqueda por min o max de stock
-    if (stockMin || stockMax) {
-      filter.stock = {}
-      if (stockMin) filter.stock.$gte = Number(stockMin)
-      if (stockMax) filter.stock.$lte = Number(stockMax)
-    }
-    // Calculamos paginación
-    const skip = (Number(page) - 1) * Number(limit)
+      // busqueda por min o max de stock
+      if (stockMin || stockMax) {
+        filter.stock = {}
+        if (stockMin) filter.stock.$gte = Number(stockMin)
+        if (stockMax) filter.stock.$lte = Number(stockMax)
+      }
+      // Calculamos paginación
+      const skip = (Number(page) - 1) * Number(limit)
 
-    // Obtenemos total de productos y los resultados de la página
-    const totalItems = await Product.countDocuments(filter)
-    const products = await Product.find(filter)
-      .skip(skip)
-      .limit(Number(limit))
-      .sort({ createdAt: -1, _id: -1 })
-      .populate('user', {
-        userName: 1,
-        name: 1,
+      // Obtenemos total de productos y los resultados de la página
+      const totalItems = await Product.countDocuments(filter)
+      const products = await Product.find(filter)
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ createdAt: -1, _id: -1 })
+        .populate('user', {
+          userName: 1,
+          name: 1,
+        })
+
+      const totalPages = Math.ceil(totalItems / Number(limit))
+
+      // Enviamos respuesta con metadatos
+      response.status(200).json({
+        meta: {
+          totalItems,
+          totalPages,
+          currentPage: Number(page),
+          itemsPerPage: Number(limit),
+        },
+        data: products,
       })
-
-    const totalPages = Math.ceil(totalItems / Number(limit))
-
-    // Enviamos respuesta con metadatos
-    response.status(200).json({
-      meta: {
-        totalItems,
-        totalPages,
-        currentPage: Number(page),
-        itemsPerPage: Number(limit),
-      },
-      data: products,
-    })
-  } catch (error) {
-    response.status(500).json({ error: 'Error al obtener los productos' })
-  }
-})
+    } catch (error) {
+      response.status(500).json({ error: 'Error al obtener los productos' })
+    }
+  }),
+)
 
 /**
  *! POST NEW PRODUCT: Ruta para crear un nuevo PRODUCTO
@@ -77,7 +81,7 @@ productRouter.post(
   middleware.upload.single('image'),
   // VALIDACIÓN: Valida los campos name, stock, price, etc.
   middleware.validationSchema(productValidation),
-  async (request, response) => {
+  asyncHandler(async (request, response) => {
     // Desestructuración de datos
     const body = request.body
     //Buscamos el usuario ya que el middleware nos seta el id que viene en el token
@@ -107,7 +111,7 @@ productRouter.post(
       name: body.name,
       stock: body.stock,
       price: body.price,
-      serial_number: body.serial_number, // Asumo que esto aún viene en body
+      serial_number: body.serial_number,
 
       // Datos de la IA
       description_ia: iaResult.descripcion,
@@ -120,7 +124,7 @@ productRouter.post(
       user: user._id,
     })
 
-    // Guarda y popula (como lo corregimos antes)
+    // Guarda y popula
     let result = await product.save()
     user.product = user.product.concat(result._id)
     await user.save()
@@ -128,7 +132,7 @@ productRouter.post(
     result = await result.populate('user', { name: 1 })
 
     response.status(201).json(result)
-  },
+  }),
 )
 
 /**
@@ -138,7 +142,7 @@ productRouter.delete(
   '/:id',
   middleware.tokenExtractor,
   middleware.userExtract,
-  async (request, response) => {
+  asyncHandler(async (request, response) => {
     const id = request.params.id
     const product = await Product.findById(id)
 
@@ -152,7 +156,7 @@ productRouter.delete(
     } else {
       return response.status(401).json({ error: 'Unauthorized user' })
     }
-  },
+  }),
 )
 
 /**
@@ -162,7 +166,7 @@ productRouter.get(
   '/:id',
   middleware.tokenExtractor,
   middleware.userExtract,
-  async (request, response) => {
+  asyncHandler(async (request, response) => {
     // Obtiene el ID del blog de los parámetros de la URL.
     const id = request.params.id
 
@@ -177,7 +181,7 @@ productRouter.get(
       // NOTA: 404 Not Found es a menudo más apropiado aquí.
       response.status(400).end()
     }
-  },
+  }),
 )
 
 /**
@@ -188,7 +192,7 @@ productRouter.patch(
   middleware.tokenExtractor,
   middleware.userExtract,
   middleware.validationSchema(productValidation),
-  async (request, response) => {
+  asyncHandler(async (request, response) => {
     const id = request.params.id
     const body = request.body // Datos a actualizar (ej. { likes: 10 })
 
@@ -213,7 +217,7 @@ productRouter.patch(
       // Manejo de errores (ej. un valor de likes no válido que falle la validación).
       next(error)
     }
-  },
+  }),
 )
 
 // -----------------------------------------------------

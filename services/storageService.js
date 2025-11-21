@@ -9,7 +9,7 @@ const s3 = new S3Client({
   },
 })
 
-async function uploadFileToS3(fileBuffer, mimetype) {
+export async function uploadFileToS3(fileBuffer, mimetype) {
   const fileName = crypto.randomUUID()
 
   const command = new PutObjectCommand({
@@ -23,5 +23,3 @@ async function uploadFileToS3(fileBuffer, mimetype) {
 
   return `https://${process.env.AWS_BUCKET}.s3.amazonaws.com/${fileName}`
 }
-
-export default uploadFileToS3

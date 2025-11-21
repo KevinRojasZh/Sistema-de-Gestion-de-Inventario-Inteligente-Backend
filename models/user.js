@@ -30,7 +30,7 @@ userSchema.set('toJSON', {
   transform: (document, retunredObject) => {
     ;((retunredObject.id = retunredObject._id.toString()),
       delete retunredObject._id)
-    delete retunredObject.passWordHass
+    delete retunredObject.passwordHass
   },
 })
 
