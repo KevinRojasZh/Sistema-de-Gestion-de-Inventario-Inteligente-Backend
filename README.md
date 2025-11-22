@@ -24,7 +24,7 @@ Este proyecto está diseñado como backend heavy para demostrar habilidades prof
 🚀 Características Principales
 ✔ 1. Creación Inteligente de Productos
 
-Endpoint: POST /api/productos
+Endpoint: POST /api/products
 
 El backend:
 
@@ -40,7 +40,7 @@ Guarda todo en la base de datos.
 
 ✔ 2. Paginación & Filtros Avanzados
 
-Endpoint: GET /api/productos
+Endpoint: GET /api/products
 
 Permite:
 
@@ -73,7 +73,7 @@ Respuestas de error bien definidas (400 / 404 / 500).
 
 ✔ 4. Exportación de Reportes (CSV)
 
-Endpoint: GET /api/reportes/inventario-csv
+Endpoint: GET /api/reports/inventario-csv
 
 Exporta todo el inventario completo, sin paginación.
 
