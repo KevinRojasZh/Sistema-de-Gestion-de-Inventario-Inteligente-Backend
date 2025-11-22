@@ -99,6 +99,7 @@ Paginar y filtrar
 
 Exportación de CSV
 
+**
 🏗️ Arquitectura del Proyecto
 /src
  ├── controllers/
@@ -113,6 +114,8 @@ Exportación de CSV
  │    ├── unit.test.js
  ├── app.js
  └── server.js
+
+**
 
 🔧 Instalación y Ejecución
 1. Clonar el repositorio
