@@ -1,114 +1,158 @@
-# 🧠📦 Sistema de Gestión de Inventario Inteligente (Backend Heavy)
+📦 Sistema de Gestión de Inventario Inteligente (Backend)
 
-**Desarrollador:** Kevin Rojas
+Desarrollado por: Kevin Rojas
+Tecnologías: Node.js · Express.js · MongoDB · Mongoose · Google Gemini · Cloud Storage · Node:test + Supertest
 
-API RESTful **robusta y escalable**, enfocada en la gestión de inventario con **lógica de negocio avanzada**, **rendimiento optimizado** e **integración con IA** (Google Gemini) para clasificación y descripción automática de productos.
+🧠 Visión General
 
----
+Este es un backend profesional para un Sistema de Gestión de Inventarios con funcionalidades avanzadas como:
 
-## 🗺️ I. Visión General y Arquitectura
+📤 Subida segura de imágenes a un servicio en la nube (S3).
 
-Demostración de una arquitectura **Node.js / Express.js** sólida.  
-Objetivos:
+🤖 Generación de descripción y categoría mediante IA (Gemini).
 
-- 🏗️ Implementar lógica empresarial compleja
-- 🔒 Validación rigurosa
-- ⚡ Rendimiento optimizado
-- 🤖 Servicios de IA inteligentes
+📄 Exportación de reportes empresariales en formato CSV.
 
----
+📚 CRUD completo, validaciones avanzadas y reglas de negocio estrictas.
 
-## 🛠️ II. Componentes Clave del Stack
+⚡ Paginación y filtros eficientes incluso con miles de productos.
 
-| Componente Clave | Rol Principal | Tecnología / Concepto |
-|-----------------|---------------|----------------------|
-| 🖥️ Backend Core | Manejo de rutas y lógica RESTful | Node.js, Express.js, Controllers, Services |
-| 💾 Base de Datos | Almacenamiento de productos, stock, categorías y metadatos inteligentes | MongoDB / PostgreSQL |
-| 🤖 Integración IA | Clasificación y descripción de productos | Google Gemini API |
-| 🖼️ Almacenamiento | Subida y almacenamiento seguro de imágenes | AWS S3, Firebase Storage, Cloudinary |
-| 📊 Reporting | Generación de documentos exportables | csv-stringify, pdfkit |
-| 🧪 Tests | Garantía de fiabilidad y calidad del código | Jest o Mocha/Chai + Supertest |
+🧪 Testing profesional (unitarios + integración/E2E).
 
----
+Este proyecto está diseñado como backend heavy para demostrar habilidades profesionales en arquitectura, calidad de código e integración de servicios externos.
 
-## ✨ III. Funcionalidades Destacadas
+🚀 Características Principales
+✔ 1. Creación Inteligente de Productos
 
-### 1️⃣ Creación Inteligente de Producto
-El backend orquesta múltiples tareas antes de guardar un producto:
+Endpoint: POST /api/productos
 
-- 🖼️ **Cloud Storage:** Subida segura de imagen (`S3 / Firebase`) y obtención de `imagen_url`.
-- 🤖 **IA Generativa:** Invocación a Gemini API para generar `descripcion_corta` y `categoria_sugerida`.
-- 💾 **Almacenamiento:** Guardado de datos completos, incluida la respuesta de IA.
+El backend:
 
-### 2️⃣ Escalabilidad y Rendimiento
-Endpoint `GET /api/productos` optimizado para miles de registros:
+Sube la imagen a la nube → genera imagen_url.
 
-- 📄 **Paginación eficiente:** `page` y `limit`
-- 🔍 **Filtros avanzados:** `categoria`, `stockMin`, `stockMax` y `search`
+Llama a Gemini para generar:
 
-### 3️⃣ Rigor Empresarial y Reporting
-- ✅ **Validación crítica:** Unicidad de `numero_serie` y prohibición de stock negativo.
-- 📂 **Exportación:** `GET /api/reportes/inventario-csv` genera y fuerza descarga de CSV/PDF.
+descripcion_ia
 
----
+categoria_ia
 
-## 🛠️ IV. Hoja de Ruta de Implementación
+Guarda todo en la base de datos.
 
-### ⚙️ Fase 1: Configuración y Backend Base
-- ✅ Inicialización: Node.js, Express.js y conexión a DB
-- ✅ Modelo de Datos: Esquema completo de `Producto`
-- ✅ CRUD Básico: Implementar rutas y controllers
+✔ 2. Paginación & Filtros Avanzados
 
-### 🎯 Fase 2: Robustez y Escalabilidad
-- 🛡️ Validación con Joi / Express-Validator
-- ⚡ Paginación y filtros avanzados en queries
+Endpoint: GET /api/productos
 
-### 🔗 Fase 3: Integración de Servicios Externos
-- 🖼️ **Cloud Storage:** Servicio para subir archivos con `multer`  
-- 🤖 **IA:** Servicio `iaService.js` para invocar Gemini y generar datos inteligentes
+Permite:
 
-### 🧪 Fase 4: Reporting, Pruebas y Cierre
-- 📊 Exportación: `GET /api/reportes/inventario-csv` con Headers HTTP para descarga
-- ✅ Tests: Unitarios e integración con Supertest para IA, paginación y errores
+page, limit
 
----
+categoria
 
-## 🚀 V. Guía de Configuración Local
+search
 
-### Requisitos
-- Node.js v18+
-- MongoDB / PostgreSQL
-- API Key de Google Gemini
-- Credenciales de Cloud Storage
+stockMin, stockMax
 
-### Instalación
-```bash
-git clone [URL_DEL_REPOSITORIO]
-cd sistema-inventario-inteligente
+Incluye:
+
+{
+  "totalItems": 122,
+  "totalPages": 13,
+  "currentPage": 2,
+  "items": [ ... ]
+}
+
+✔ 3. Validaciones Empresariales
+
+numero_serie único garantizado.
+
+El stock no puede quedar negativo.
+
+Validaciones con Joi.
+
+Respuestas de error bien definidas (400 / 404 / 500).
+
+✔ 4. Exportación de Reportes (CSV)
+
+Endpoint: GET /api/reportes/inventario-csv
+
+Exporta todo el inventario completo, sin paginación.
+
+Devuelve un archivo descargable vía:
+
+Content-Type: text/csv
+
+Content-Disposition: attachment; filename="inventario.csv"
+
+✔ 5. Testing Profesional
+
+Frameworks utilizados:
+
+Tests Unitarios: validaciones, funciones internas, lógica de negocio.
+
+Tests de Integración/E2E:
+
+Creación de producto con imagen + IA
+
+Validación y errores
+
+Paginar y filtrar
+
+Exportación de CSV
+
+🏗️ Arquitectura del Proyecto
+/src
+ ├── controllers/
+ ├── models/
+ ├── routes/
+ ├── services/
+ │    ├── iaService.js     // Gemini
+ │    ├── uploadService.js // s3
+ ├── middleware/
+ ├── tests/
+ │    ├── integration.test.js
+ │    ├── unit.test.js
+ ├── app.js
+ └── server.js
+
+🔧 Instalación y Ejecución
+1. Clonar el repositorio
+git clone https://github.com/tuusuario/inventario-inteligente-backend.git
+cd inventario-inteligente-backend
+
+2. Instalar dependencias
 npm install
-Variables de Entorno
-Crea un archivo .env:
 
-env
-Copiar código
-# Configuración del Servidor
-PORT=3001
-NODE_ENV=development
+3. Configurar variables de entorno
 
-# Base de Datos
-MONGODB_URI=<TU_CADENA_DE_CONEXION_MONGODB>
+Crear un archivo .env:
 
-# Integración con IA
-GEMINI_API_KEY=<TU_API_KEY_DE_GEMINI>
+PORT=3000
+MONGO_URI=...
+GEMINI_API_KEY=...
+CLOUD_STORAGE_KEY=...
 
-# Almacenamiento en la Nube (AWS S3)
-AWS_ACCESS_KEY_ID=<TU_CLAVE_DE_ACCESO>
-AWS_SECRET_ACCESS_KEY=<TU_CLAVE_SECRETA>
-AWS_BUCKET_NAME=<NOMBRE_DEL_BUCKET>
-AWS_REGION=us-east-1
-Ejecución
-bash
-Copiar código
+4. Ejecutar en modo desarrollo
 npm run dev
-API disponible en: http://localhost:3001/api/
 
+🧪 Ejecutar Tests
+npm test
+
+📡 Endpoints Principales
+Productos
+Método	Endpoint	Descripción
+POST	/api/products	Crear producto con IA + imagen
+GET	/api/products	Listar productos con paginación & filtros
+GET	/api/products/:id	Obtener un producto
+PUT	/api/products/:id	Actualizar producto
+DELETE	/api/products/:id	Eliminar producto
+Reportes
+Método	Endpoint	Descripción
+GET	/api/reportes/inventario-csv	Descargar inventario completo (CSV)
+📄 Licencia
+
+MIT License.
+
+✨ Autor
+
+Kevin Rojas
+Desarrollador Full Stack
