@@ -92,6 +92,7 @@ describe(
         assert.ok(response.body.image_url.startsWith('http')) // Verifica URL de S3
         assert.ok(response.body.description_ia)
         assert.ok(response.body.category_ia)
+        assert.ok(/^https?:\/\/.+/.test(response.body.image_url))
 
         console.log(
           'IA =>',
@@ -101,5 +102,65 @@ describe(
         console.log('IMAGE =>', response.body.image_url)
       },
     )
+    test('Debe fallar si falta name', async () => {
+      await api
+        .post('/api/products')
+        .set('Authorization', tokenUser)
+        .field('price', '20')
+        .field('stock', '10')
+        .field('serial_number', 'BADNO01')
+        .expect(400)
+    })
+
+    test('La IA debe devolver JSON válido', async () => {
+      const res = await api
+        .post('/api/products')
+        .set('Authorization', tokenUser)
+        .field('name', 'Producto IA test')
+        .field('price', '10')
+        .field('stock', '10')
+        .field('serial_number', 'IA001')
+        .expect(201)
+
+      const description = res.body.description_ia
+      const category = res.body.category_ia
+
+      assert.ok(typeof description === 'string' && description.length > 0)
+      assert.ok(typeof category === 'string' && category.length > 0)
+    })
+
+    test('No permite serial_number duplicado', async () => {
+      await api
+        .post('/api/products')
+        .set('Authorization', tokenUser)
+        .field('name', 'A')
+        .field('price', '10')
+        .field('stock', '10')
+        .field('serial_number', 'DUP001')
+
+      await api
+        .post('/api/products')
+        .set('Authorization', tokenUser)
+        .field('name', 'B')
+        .field('price', '10')
+        .field('stock', '10')
+        .field('serial_number', 'DUP001')
+        .expect(400)
+    })
+
+    test('El endpoint responde en menos de 6s', { timeout: 6000 }, async () => {
+      const start = Date.now()
+
+      await api
+        .post('/api/products')
+        .set('Authorization', tokenUser)
+        .field('name', 'Speed')
+        .field('price', '20')
+        .field('stock', '5')
+        .field('serial_number', 'SPD001')
+
+      const duration = Date.now() - start
+      assert.ok(duration < 6000)
+    })
   },
 )
