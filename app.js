@@ -7,6 +7,7 @@ import middleware from './utils/middleware.js'
 import productRouter from './controllers/product_controller.js'
 import loginRouter from './controllers/login_controller.js'
 import userRouter from './controllers/user_controller.js'
+import reportesRouter from './controllers/reportesRouter.js'
 
 const app = express()
 
@@ -24,6 +25,7 @@ app.use(middleware.requestLogger)
 app.use('/api/products', productRouter)
 app.use('/api/login', loginRouter)
 app.use('/api/users', userRouter)
+app.use('/api/inventario-csv', reportesRouter)
 
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)

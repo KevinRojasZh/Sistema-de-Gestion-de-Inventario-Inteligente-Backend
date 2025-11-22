@@ -27,12 +27,10 @@ const producSchema = new mongoose.Schema(
     image_url: {
       type: String,
     },
-    user: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   { timestamps: true, versionKey: false },
 )
