@@ -117,7 +117,7 @@ Ejemplo de peticion:
 
 
 
-1. Clonar el repositorio git clone https://github.com/tuusuario/inventario-inteligente-backend.git 
+1. Clonar el repositorio git clone https://github.com/KevinRojasZh/inventario-inteligente-backend.git 
 
 
 
