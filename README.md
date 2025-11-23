@@ -1,7 +1,13 @@
-📦 Sistema de Gestión de Inventario Inteligente (Backend)
 
-Desarrollado por: Kevin Rojas
-Tecnologías: Node.js · Express.js · MongoDB · Mongoose · Google Gemini · Cloud Storage · Node:test + Supertest
+## Autor
+
+Kevin Rojas Desarrollador Full Stack
+
+
+- [@KevinRojasZh](https://github.com/KevinRojasZh)
+
+
+# 📦 Sistema de Gestión de Inventario Inteligente (Backend)
 
 🧠 Visión General
 
@@ -21,32 +27,29 @@ Este es un backend profesional para un Sistema de Gestión de Inventarios con fu
 
 Este proyecto está diseñado como backend heavy para demostrar habilidades profesionales en arquitectura, calidad de código e integración de servicios externos.
 
-🚀 Características Principales
-✔ 1. Creación Inteligente de Productos
 
-Endpoint: POST /api/products
+## 🛠 Skills
+Node.js · Express.js · MongoDB · Mongoose · Google Gemini · Cloud Storage · Node:test + Supertest
 
-El backend:
 
-Sube la imagen a la nube → genera imagen_url.
+## API Reference
 
-Llama a Gemini para generar:
+#### ¡Para todas las rutas hace falta estar logeado!
 
-descripcion_ia
 
-categoria_ia
+#### Getter de todos los productos
 
-Guarda todo en la base de datos.
+```http
+GET /api/products
+```
 
-✔ 2. Paginación & Filtros Avanzados
-
-Endpoint: GET /api/products
+#### Paginación & Filtros Avanzados
 
 Permite:
-
+```
 page, limit
 
-categoria
+category
 
 search
 
@@ -54,108 +57,103 @@ stockMin, stockMax
 
 Incluye:
 
-{
-  "totalItems": 122,
-  "totalPages": 13,
-  "currentPage": 2,
-  "items": [ ... ]
-}
+{ "totalItems": 122, "totalPages": 13, "currentPage": 2, "items": [ ... ] }
+```
+Ejemplo de peticion:
+```
+/api/products?page=1&limit=2&category=Refrescos&search=fanta&stockMin=10&stockMax=3000
+```
 
-✔ 3. Validaciones Empresariales
 
-numero_serie único garantizado.
 
-El stock no puede quedar negativo.
 
-Validaciones con Joi.
+#### Getter de un producto
 
-Respuestas de error bien definidas (400 / 404 / 500).
+```http
+  GET /api/products/${id}
+```
 
-✔ 4. Exportación de Reportes (CSV)
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `id`      | `string` | **Required**. Id del producto a gettear |
 
-Endpoint: GET /api/reports/inventario-csv
 
-Exporta todo el inventario completo, sin paginación.
 
-Devuelve un archivo descargable vía:
+#### Post de producto
+```http
+  POST /api/products
+```
 
-Content-Type: text/csv
+| Parámetro (Body: Multipart) | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `name` | `string` | **Required**. Nombre del producto |
+| `price` | `number` | **Required**. Precio del producto |
+| `stock` | `number` | **Required**. Cantidad de stock|
+| `serial_number` | `string` | **Required**. Numero de serie unico |
+| `image` | `file` | **Optional**. Archivo de imagen para subir a Cloud Storage (S3) |
 
-Content-Disposition: attachment; filename="inventario.csv"
+#### Post de usuario 
+```http
+  POST /api/users
+```
 
-✔ 5. Testing Profesional
+| Parámetro (Body: Multipart) | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `name` | `string` | **Required**. Nombre del usuario |
+| `userName` | `string` | **Required**. Nikname del usuario |
+| `password` | `string` | **Required**. Al menos 3 caracteres|
 
-Frameworks utilizados:
+#### Reporte en archivo  CSV
 
-Tests Unitarios: validaciones, funciones internas, lógica de negocio.
+```http
+  GET /api/reports/inventario-csv
+```
 
-Tests de Integración/E2E:
 
-Creación de producto con imagen + IA
 
-Validación y errores
 
-Paginar y filtrar
 
-Exportación de CSV
+## 🔧 Installation y ejecución
 
-**
-🏗️ Arquitectura del Proyecto
-/src
- ├── controllers/
- ├── models/
- ├── routes/
- ├── services/
- │    ├── iaService.js     // Gemini
- │    ├── uploadService.js // s3
- ├── middleware/
- ├── tests/
- │    ├── integration.test.js
- │    ├── unit.test.js
- ├── app.js
- └── server.js
 
-**
 
-🔧 Instalación y Ejecución
-1. Clonar el repositorio
-git clone https://github.com/tuusuario/inventario-inteligente-backend.git
+1. Clonar el repositorio git clone https://github.com/tuusuario/inventario-inteligente-backend.git 
+
+
+
+2. Instalar dependencias 
+```bash
 cd inventario-inteligente-backend
+npm install 
 
-2. Instalar dependencias
-npm install
+```
 
-3. Configurar variables de entorno
+3. Configurar variables de entorno, crear un archivo .env:
 
-Crear un archivo .env:
+4. Ejecutar en modo desarrollo npm run dev
 
-PORT=3000
-MONGO_URI=...
-GEMINI_API_KEY=...
-CLOUD_STORAGE_KEY=...
+## Variables de entorno
 
-4. Ejecutar en modo desarrollo
-npm run dev
+Para ejecutar este proyecto hacen falta las siguientes variables de entorno en un archivo .env
 
-🧪 Ejecutar Tests
-npm test
+`MONGO_URI=...`
 
-📡 Endpoints Principales
-Productos
-Método	Endpoint	Descripción
-POST	/api/products	Crear producto con IA + imagen
-GET	/api/products	Listar productos con paginación & filtros
-GET	/api/products/:id	Obtener un producto
-PUT	/api/products/:id	Actualizar producto
-DELETE	/api/products/:id	Eliminar producto
-Reportes
-Método	Endpoint	Descripción
-GET	/api/reportes/inventario-csv	Descargar inventario completo (CSV)
-📄 Licencia
+`TEST_MONGODB_URI=...`
 
-MIT License.
+`SECRET=...`
 
-✨ Autor
+`GEMINI_KEY=...`
 
-Kevin Rojas
-Desarrollador Full Stack
+`AWS_REGION=...`
+
+`AWS_BUCKET=...`
+
+`AWS_KEY=...`
+
+`AWS_SECRET=...`
+
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)
+
