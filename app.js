@@ -25,7 +25,7 @@ app.use(middleware.requestLogger)
 app.use('/api/products', productRouter)
 app.use('/api/login', loginRouter)
 app.use('/api/users', userRouter)
-app.use('/api/reports/inventario-csv', reportesRouter)
+app.use('/api/reports', reportesRouter)
 
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)

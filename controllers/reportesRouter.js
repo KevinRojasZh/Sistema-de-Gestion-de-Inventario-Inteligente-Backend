@@ -4,7 +4,7 @@ import createCsvWriter from 'csv-writer'
 
 const reportesRouter = Router()
 
-reportesRouter.get('/', async (req, res) => {
+reportesRouter.get('/inventario-csv', async (req, res) => {
   try {
     const productos = await Product.find({}).populate('user', {
       name: 1,
