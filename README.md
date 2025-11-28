@@ -1,3 +1,6 @@
+## 🖼️ Vista previa del Panel (Demo)
+
+![UI Preview](./assets/ui_preview.png)
 
 ## Autor
 
