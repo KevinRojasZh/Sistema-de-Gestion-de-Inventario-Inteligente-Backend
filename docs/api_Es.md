@@ -1,122 +1,162 @@
-# Documentación del Proyecto: Inventario con IA y S3
-
-El proyecto es una aplicación **API RESTful** que utiliza **Express.js** y **MongoDB/Mongoose** para gestionar un inventario. Su diseño destaca por la integración de servicios de Inteligencia Artificial (IA) de Google Gemini para la catalogación de productos y la utilización de AWS S3 para el almacenamiento de imágenes.
-
-## I. Configuración y Entorno
-
-La aplicación maneja la configuración a través de variables de entorno, importadas usando `dotenv/config` [1]. La conexión a la base de datos se maneja de forma asíncrona [2].
-
-| Componente              | Valor / Configuración                                                                                                                                                                              | Fuentes |
-| :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
-| **Puerto**              | El servidor se ejecuta en el puerto definido por `process.env.PORT` o, por defecto, en el puerto `3001` [1].                                                                                       | [1]     |
-| **Base de Datos (URI)** | La URI de MongoDB (`MONGODB_URI`) es condicional: usa `process.env.TEST_MONGODB_URI` si `NODE_ENV` es `'test'`, y `process.env.MONGODB_URI` en caso contrario [1]. Ambas URIs están definidas [3]. | [1, 3]  |
-| **Conexión a DB**       | La función `conectToDataBase` establece la conexión mediante `mongoose.connect(config.MONGODB_URI)` y registra el estado ("Conected to MongoDB" o error) [2].                                      | [2]     |
-| **Secreto JWT**         | El secreto utilizado para firmar los JSON Web Tokens (JWT) es `SECRET = 'HOLA'` [3].                                                                                                               | [3]     |
-| **Credenciales AWS**    | Se utilizan las variables de entorno `AWS_REGION='eu-north-1'`, `AWS_BUCKET='inventario-images-bucket'`, `AWS_KEY` y `AWS_SECRET` [3].                                                             | [3]     |
-| **Clave Gemini**        | La clave de acceso a Google Gemini (`GEMINI_KEY`) está definida [3].                                                                                                                               | [3]     |
-
-## II. Modelado de Datos (Mongoose Schemas)
-
-### A. Esquema de Producto (`Product`)
-
-El esquema de producto define los campos de los artículos de inventario [4].
-
-| Campo            | Tipo       | Requerido                     | Restricciones/Detalles                                      | Fuentes |
-| :--------------- | :--------- | :---------------------------- | :---------------------------------------------------------- | :------ |
-| `name`           | `String`   | Sí                            | Mínimo 3 caracteres [4]. Validación Joi: Máximo 100 [5].    | [4, 5]  |
-| `price`          | `Number`   | Sí                            | Validación Joi: Positivo [5].                               | [4, 5]  |
-| `stock`          | `Number`   | Sí                            | Validación Joi: Entero, mínimo 0 [5].                       | [4, 5]  |
-| `serial_number`  | `String`   | No especificado en el esquema | Validación Joi: Alfanumérico, min 3, max 30, requerido [5]. | [4, 5]  |
-| `description_ia` | `String`   | No                            | Descripción autogenerada por IA [4].                        | [4]     |
-| `category_ia`    | `String`   | No                            | Categoría autogenerada por IA [4].                          | [4]     |
-| `image_url`      | `String`   | No                            | URL de la imagen [4].                                       | [4]     |
-| `user`           | `ObjectId` | No                            | Referencia al modelo `User` (creador del producto) [4].     | [4]     |
-
-- **Índices de Búsqueda:** Se ha definido un índice de texto para permitir búsquedas eficientes en los campos `name`, `category_ia` y `description_ia` [6].
-- **Transformación JSON:** Al serializar, se añaden `timestamps` [4], se elimina `_id` y se sustituye por `id` [6].
-
-### B. Esquema de Usuario (`User`)
-
-El esquema de usuario define los campos de los usuarios de la aplicación [7].
-
-| Campo          | Tipo                | Requerido | Restricciones/Detalles                       | Fuentes |
-| :------------- | :------------------ | :-------- | :------------------------------------------- | :------ |
-| `name`         | `String`            | Sí        |                                              | [7]     |
-| `userName`     | `String`            | Sí        | Debe ser único (`unique: true`) [7].         | [7]     |
-| `passwordHass` | `String`            | Sí        | Mínimo 3 caracteres [7, 8].                  | [7, 8]  |
-| `product`      | `Array de ObjectId` | No        | Lista de productos asociados al usuario [7]. | [7]     |
-
-- **Transformación JSON:** Al serializar, se elimina `_id` (añadiendo `id`) y el campo sensible `passwordHass` [7, 9].
-
-## III. Arquitectura del Servidor y Middleware
-
-El servidor Express [10] utiliza una serie de middlewares para manejar peticiones y errores [11].
-
-| Middleware             | Propósito                                                                                                                                                                              | Detalles | Fuentes |
-| :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------- | :------ |
-| **`requestLogger`**    | Registra el método, ruta y cuerpo de la petición [12].                                                                                                                                 | [12]     |
-| **`tokenExtractor`**   | Extrae el token JWT de la cabecera `Authorization` (debe comenzar con `Bearer `) [13]. Devuelve 401 si no hay token o si es inválido [13].                                             | [13]     |
-| **`userExtract`**      | Decodifica el token JWT, verifica el ID del usuario y lo asigna a `request.user` [14]. Captura errores de JWT (expirado o inválido) devolviendo 401 [15].                              | [14, 15] |
-| **`upload`**           | Middleware de Multer configurado con `memoryStorage()` para manejar la subida de archivos en memoria [16].                                                                             | [16]     |
-| **`validationSchema`** | Valida el cuerpo de la petición contra un esquema Joi. Devuelve 400 si la validación falla [16, 17].                                                                                   | [16, 17] |
-| **`errorHandler`**     | Manejador central que captura errores de Mongoose (`ValidationError`, `CastError`, duplicados 11000) y errores Joi, devolviendo el código de estado HTTP 400 o 500 apropiado [17, 18]. | [17, 18] |
-| **`unknownEndpoint`**  | Maneja rutas no definidas (404 Not Found) [12].                                                                                                                                        | [12]     |
-
-## IV. Endpoints de la API
-
-### A. Gestión de Productos (`/api/products`)
-
-Esta ruta está protegida y requiere autenticación [19-22].
-
-| Método     | Ruta   | Funcionalidad                                                                                                                                                                                                  | Fuentes      |
-| :--------- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------- |
-| **POST**   | `/`    | **Creación** de producto. Utiliza `upload.single('image')` [19]. Sube el archivo a S3 [23] y llama a `analyzeProduct` (IA) para obtener `description_ia` y `category_ia` [23, 24].                             | [19, 23, 24] |
-| **GET**    | `/`    | Obtiene productos con **paginación** (`page`, `limit`) [25] y **filtrado**. Soporta búsqueda de texto (`search`) [25], filtrado por categoría (`category`) y por rango de stock (`stockMin`, `stockMax`) [26]. | [25-27]      |
-| **DELETE** | `/:id` | **Eliminación** de producto (204). Solo permitido si el usuario autenticado es el creador del producto [20].                                                                                                   | [20]         |
-| **PATCH**  | `/:id` | **Actualización** de producto (200). Aplica validación Joi antes de actualizar [22, 28].                                                                                                                       | [22, 28]     |
-| **GET**    | `/:id` | Obtiene un producto específico por ID [21].                                                                                                                                                                    | [21]         |
-
-### B. Autenticación y Usuarios
-
-| Método   | Ruta                | Funcionalidad                                                                                                                                    | Fuentes |
-| :------- | :------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
-| **POST** | `/api/users/signup` | **Registro** de usuario. Hashea la contraseña (mínimo 3 caracteres) con `bcrypt` (`saltRounds = 10`) antes de guardar [8].                       | [8]     |
-| **GET**  | `/api/users`        | Lista todos los usuarios, popularizando los nombres de sus productos asociados [29].                                                             | [29]    |
-| **POST** | `/api/login`        | **Inicio de Sesión**. Verifica credenciales [30, 31]. Si es exitoso, genera un JWT con el `id` y `username`, y devuelve el token (200) [32, 33]. | [30-33] |
-
-### C. Reportes
-
-| Método  | Ruta                          | Funcionalidad                                                                                                                                                                                                                    | Fuentes |
-| :------ | :---------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
-| **GET** | `/api/reports/inventario-csv` | Genera y descarga un **reporte CSV** con todos los productos [34]. Utiliza la librería `csv-writer` para crear el archivo en `/tmp/inventario.csv` con cabeceras específicas (ID, Nombre, Precio, Stock, Usuario, etc.) [35-37]. | [34-37] |
-
-## V. Integraciones de Servicios Externos
-
-### A. Google Gemini AI
-
-- **Función:** `analyzeProduct(name)` [38].
-- **Modelo:** `gemini-2.5-flash` [38].
-- **Lógica:** Genera una descripción corta y una categoría adecuada para el producto basado en su nombre [38].
-- **Formato de Salida:** Se requiere que la IA devuelva la respuesta **SOLO JSON** con las claves `"descripcion"` y `"categoria"` [38]. El sistema utiliza una expresión regular para asegurar que se extrae y parsea el JSON válido [39].
-
-### B. AWS S3
-
-- **Función:** `uploadFileToS3(fileBuffer, mimetype)` [40].
-- **Proceso de Subida:** Utiliza el `S3Client` y `PutObjectCommand` [40]. Genera un `fileName` único con `crypto.randomUUID()` [40].
-- **Resultado:** Tras la subida, devuelve la URL de acceso público del archivo, formateada con el nombre del bucket (`https://[AWS_BUCKET].s3.amazonaws.com/[fileName]`) [41].
-
-## VI. Pruebas
-
-El proyecto cuenta con pruebas robustas de integración y E2E, utilizando `node:test` y `supertest` [42, 43].
-
-### A. Pruebas E2E (End-to-End)
-
-Las pruebas E2E validan la interacción del sistema completo con los servicios externos reales (AWS S3 y Gemini AI) [44].
-
-- **Verificación de Creación:** Se comprueba que, al subir una imagen (`attach('image', ...)`) y datos, se recibe una `image_url` válida de S3 (comenzando con 'http') y valores para `description_ia` y `category_ia` generados por la IA [45, 46].
-- **Validaciones:** Se verifica el manejo de errores Joi (ej. falta del campo `name` o `stock` negativo) [47, 48] y errores de base de datos (ej. `serial_number` duplicado, devolviendo 400) [49].
-
-### B. Pruebas de Integración
-
-- **Funcionalidad CRUD:** Verifican la creación exitosa (201) [50], la obtención por ID [51] y la eliminación (204) [52].
-- **Paginación y Filtrado:** Se prueba la funcionalidad de paginación [48], el filtrado de texto utilizando `search` [53], y el filtrado por rangos numéricos de stock (`stockMin`, `stockMax`) [53, 54].
+Documentación del Proyecto: Inventario con IA y S3
+El proyecto es una API RESTful desarrollada con Express.js y MongoDB/Mongoose, diseñada para la gestión de inventario automatizado, integrando servicios de Inteligencia Artificial (IA) de Google Gemini para la catalogación y AWS S3 para el almacenamiento de archivos.
+I. Configuración y Entorno
+La configuración del entorno se gestiona a través de variables de entorno (usando dotenv/config). La conexión a la base de datos es asíncrona y se inicializa al arrancar el servidor.
+Componente
+Configuración
+Puerto
+El servidor se ejecuta en el puerto 3001 o el definido por process.env.PORT.
+Base de Datos (URI)
+La URI de MongoDB (MONGODB_URI) se selecciona condicionalmente, utilizando una URI de prueba (TEST_MONGODB_URI) si NODE_ENV es 'test'.
+Conexión a DB
+La función conectToDataBase establece la conexión con Mongoose y notifica el estado de la conexión.
+Secreto JWT
+El secreto utilizado para firmar los JSON Web Tokens es SECRET = 'HOLA'.
+Credenciales AWS
+Se requieren AWS_REGION='eu-north-1', AWS_BUCKET='inventario-images-bucket', AWS_KEY y AWS_SECRET.
+Clave Gemini
+La clave de acceso a Google Gemini (GEMINI_KEY) está definida.
+II. Modelado de Datos (Mongoose Schemas)
+A. Esquema de Producto (Product)
+Define los campos de los artículos de inventario.
+Campo
+Tipo
+Requerido
+Restricciones/Detalles
+name
+String
+Sí
+Mínimo 3, máximo 100 caracteres.
+price
+Number
+Sí
+Debe ser positivo.
+stock
+Number
+Sí
+Debe ser entero, mínimo 0.
+serial_number
+String
+Sí (Joi)
+Alfanumérico, entre 3 y 30 caracteres.
+description_ia
+String
+No
+Descripción autogenerada por IA.
+category_ia
+String
+No
+Categoría autogenerada por IA.
+image_url
+String
+No
+URL de la imagen (S3).
+user
+ObjectId
+No
+Referencia al usuario creador.
+• Índices: Se utiliza un índice de texto para permitir búsquedas eficientes en name, category_ia y description_ia.
+• Transformación JSON: Se añade id y se eliminan \_id y versionKey.
+B. Esquema de Usuario (User)
+Define a los usuarios de la aplicación.
+Campo
+Tipo
+Requerido
+Restricciones/Detalles
+name
+String
+Sí
+userName
+String
+Sí
+Debe ser único.
+passwordHass
+String
+Sí
+Mínimo 3 caracteres.
+product
+Array de ObjectId
+No
+Lista de productos creados por el usuario.
+• Transformación JSON: Se eliminan \_id (añadiendo id) y el campo passwordHass de la respuesta JSON.
+III. Arquitectura y Middleware
+El servidor Express utiliza varios middlewares para la gestión de peticiones, validación y seguridad.
+Middleware
+Propósito
+Detalles
+cors()
+Habilita las peticiones de origen cruzado.
+express.static('dist')
+Sirve los archivos estáticos (frontend).
+requestLogger
+Registra el método, ruta y cuerpo de la petición.
+tokenExtractor
+Extrae el token JWT (requiere Bearer en la cabecera Authorization). Devuelve 401 si el formato es inválido o falta.
+userExtract
+Verifica el token, decodifica el ID del usuario y lo asigna a request.user. Maneja errores de JWT (expiración, firma inválida) devolviendo 401.
+upload
+Middleware de Multer configurado con memoryStorage() para manejar la subida de archivos en memoria.
+validationSchema
+Valida el cuerpo de la petición contra un esquema Joi. Devuelve 400 en caso de fallo.
+errorHandler
+Captura y formatea errores (Mongoose, Joi). Maneja errores de validación, IDs malformados (CastError) y campos duplicados (código 11000), devolviendo 400 o 500.
+unknownEndpoint
+Maneja rutas no definidas (404 Not Found).
+IV. Endpoints de la API
+A. Gestión de Productos (/api/products)
+Esta ruta está protegida por autenticación JWT.
+Método
+Ruta
+Funcionalidad
+POST
+/
+Creación de producto. Utiliza upload.single('image'). Sube el archivo a S3 y llama a la IA para categorizar y describir.
+GET
+/
+Obtiene productos con paginación (page, limit). Soporta filtrado por búsqueda de texto (search), categoría (category) y rango de stock (stockMin, stockMax).
+GET
+/:id
+Obtiene un producto específico por ID.
+DELETE
+/:id
+Eliminación de producto (204). Solo permitido si el usuario autenticado es el creador del producto.
+PATCH
+/:id
+Actualización de producto (200). Aplica validación Joi.
+B. Autenticación y Usuarios
+Método
+Ruta
+Funcionalidad
+POST
+/api/users/signup
+Registro de usuario. La contraseña (mínimo 3 caracteres) se hashea con bcrypt (saltRounds = 10).
+GET
+/api/users
+Lista todos los usuarios, incluyendo los nombres de sus productos asociados (población).
+POST
+/api/login
+Inicio de Sesión. Verifica credenciales. Si es exitoso, genera un JWT con el id y username, y devuelve el token (200).
+C. Reportes
+Método
+Ruta
+Funcionalidad
+GET
+/api/reports/inventario-csv
+Genera y descarga un reporte en formato CSV. Obtiene todos los productos y utiliza csv-writer para crear el archivo /tmp/inventario.csv con cabeceras formateadas.
+V. Integraciones de Servicios Externos
+A. Google Gemini AI (Análisis de Productos)
+• Función: analyzeProduct(name).
+• Modelo: gemini-2.5-flash.
+• Propósito: Generar una descripción corta y una categoría adecuada basándose en el nombre del producto.
+• Formato de Salida: Se exige a la IA que devuelva la respuesta estrictamente en formato JSON con las claves "descripcion" y "categoria". Se utiliza una expresión regular para extraer el JSON válido de la respuesta de la IA.
+B. AWS S3 (Almacenamiento de Imágenes)
+• Función: uploadFileToS3(fileBuffer, mimetype).
+• Proceso: Utiliza el S3Client y un comando PutObjectCommand. Genera un nombre de archivo único (crypto.randomUUID()) antes de la subida.
+• Resultado: Devuelve la URL de acceso público al archivo subido en el bucket de S3.
+VI. Pruebas
+El proyecto cuenta con pruebas robustas de integración y End-to-End (E2E) utilizando node:test y supertest.
+A. Alcance de las Pruebas
+• Pruebas E2E: Verifican la integración con servicios externos reales (S3 y Gemini IA). Se comprueba que la creación de un producto resulta en una URL de S3 válida y campos de IA poblados, y que el endpoint responde en menos de 6 segundos.
+• Validaciones y Errores: Se verifican fallos de validación (ej. falta del campo name, stock negativo) y fallos de unicidad de base de datos (ej. serial_number duplicado), asegurando que devuelvan el código 400 Bad Request.
+• Funcionalidades: Se prueban la paginación, el filtrado de texto (usando search) y el filtrado por rangos de stock.
+• Flujo de Autenticación: Las pruebas incluyen la limpieza de la base de datos, la creación de un usuario de prueba, el inicio de sesión y el uso del token de autenticación (tokenUser) en las peticiones subsiguientes.
